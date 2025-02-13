@@ -14,9 +14,10 @@ datasource db {
 }
 
 model Order {
-  id        String   @id @default(uuid())
-  userId    String
-  productId String
-  quantity  Int
+  id        String  @id @default(uuid())
+  product   String
+  category  String
+  region    String
+  price     Float
   createdAt DateTime @default(now())
 }
