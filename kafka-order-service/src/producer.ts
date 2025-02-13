@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+// Kafka Setup
 const kafka = new Kafka({
   clientId: "order-producer",
   brokers: [process.env.KAFKA_BROKER!],
@@ -11,29 +12,31 @@ const kafka = new Kafka({
 
 const producer = kafka.producer();
 
-const generateOrder = () => ({
-  userId: faker.string.uuid(),
-  productId: faker.commerce.product(),
-  quantity: faker.number.int({ min: 1, max: 10 }),
-});
-
-const sendBulkOrders = async (count: number) => {
+const sendOrder = async () => {
   await producer.connect();
 
-  const messages = Array.from({ length: count }).map(() => ({
-    key: faker.string.uuid(),
-    value: JSON.stringify(generateOrder()),
-  }));
+  for (let i = 0; i < 10; i++) {
+    const order = {
+      product: faker.commerce.product(),
+      category: faker.commerce.department(), // 👈 Category ko Partition Key ke liye use karenge
+      region: faker.location.country(),
+      price: faker.commerce.price(),
+    };
 
-  // This will produce message to the Kafka topic in a same partition
-  await producer.send({
-    topic: "orders",
-    messages,
-  });
+    await producer.send({
+      topic: "orders",
+      messages: [
+        {
+          key: order.category, // 👈 Partitioning Key
+          value: JSON.stringify(order),
+        },
+      ],
+    });
 
-  console.log(`✅ Sent ${count} orders to Kafka`);
+    console.log(`✅ Order Sent: ${JSON.stringify(order)}`);
+  }
+
   await producer.disconnect();
 };
 
-// Send 1000 Orders
-sendBulkOrders(1000);
+sendOrder().catch(console.error);
