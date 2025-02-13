@@ -1,6 +1,7 @@
 import { Kafka } from "kafkajs";
-import dotenv from "dotenv";
 import prisma from "./prisma.js";
+import dotenv from "dotenv";
+import { Order } from "./index.d.js";
 
 dotenv.config();
 
@@ -11,29 +12,50 @@ const kafka = new Kafka({
 
 const consumer = kafka.consumer({ groupId: "order-group" });
 
-const consumeBulkOrders = async () => {
+const MAX_RETRIES = 3; // 👈 Maximum 3 retries
+
+const processOrder = async (order: Order, retryCount = 0) => {
+  try {
+    await prisma.order.create({
+      data: {
+        product: order.product,
+        category: order.category,
+        region: order.region,
+        price: order.price,
+      },
+    });
+
+    console.log(`✅ Order Inserted: ${order.product}`);
+  } catch (error) {
+    console.error(
+      `❌ Order Insert Failed: ${order.product}, Retry: ${retryCount}`
+    );
+
+    if (retryCount < MAX_RETRIES) {
+      // Retry after 2 sec
+      setTimeout(() => processOrder(order, retryCount + 1), 2000);
+    } else {
+      console.error(`🚨 Moving Order to DLQ: ${order.id}`);
+      await kafka.producer().send({
+        topic: "failed_orders", // 👈 DLQ topic me bhejna
+        messages: [{ key: order.category, value: JSON.stringify(order) }],
+      });
+    }
+  }
+};
+
+const consumeOrders = async () => {
   await consumer.connect();
   await consumer.subscribe({ topic: "orders", fromBeginning: true });
 
-  console.log("🚀 Kafka Consumer Started...");
-
   await consumer.run({
-    eachBatch: async ({ batch }) => {
-      const orders = batch.messages.map((msg) =>
-        JSON.parse(msg.value!.toString())
-      );
+    eachMessage: async ({ message }) => {
+      if (!message.value) return;
 
-      console.log(`✅ Processing ${orders.length} orders...`);
-
-      if (orders.length > 0) {
-        await prisma.order.createMany({
-          data: orders,
-          skipDuplicates: true,
-        });
-        console.log("📥 Orders inserted into PostgreSQL successfully!");
-      }
+      const order = JSON.parse(message.value.toString());
+      await processOrder(order);
     },
   });
 };
 
-consumeBulkOrders();
+consumeOrders().catch(console.error);
