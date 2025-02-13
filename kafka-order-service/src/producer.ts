@@ -25,6 +25,7 @@ const sendBulkOrders = async (count: number) => {
     value: JSON.stringify(generateOrder()),
   }));
 
+  // This will produce message to the Kafka topic in a same partition
   await producer.send({
     topic: "orders",
     messages,
