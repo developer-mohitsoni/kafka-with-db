@@ -14,10 +14,10 @@ datasource db {
 }
 
 model Order {
-  id        String  @id @default(uuid())
+  id        String   @id @default(uuid())
   product   String
   category  String
   region    String
-  price     Float
+  price     String
   createdAt DateTime @default(now())
 }
