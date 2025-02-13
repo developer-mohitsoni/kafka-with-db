@@ -8,7 +8,7 @@
     "build": "tsc",
     "server": "wait-on dist/server.js && nodemon ./dist/server.js",
     "watch": "tsc -w",
-    "dev": "concurrently \"npm run watch\" \"npm run server\" \"npm run watch-views\" \"node ./dist/jobs/emailProcessor.js\""
+    "dev": "concurrently \"npm run watch\" \"npm run server\" \"npm run watch-views\""
   },
   "keywords": [],
   "author": "",
@@ -16,6 +16,7 @@
   "description": "",
   "dependencies": {
     "@prisma/client": "^6.3.1",
+    "concurrently": "^9.1.2",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "prisma": "^6.3.1"
@@ -26,6 +27,7 @@
     "@types/node": "^22.13.2",
     "ts-node": "^10.9.2",
     "tsc-watch": "^6.2.1",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "wait-on": "^8.0.2"
   }
 }
