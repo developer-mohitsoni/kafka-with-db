@@ -8,7 +8,8 @@
     "build": "tsc",
     "watch": "tsc -w",
     "producer": "nodemon ./dist/producer.js",
-    "consumer": "nodemon ./dist/consumer.js"
+    "consumer": "nodemon ./dist/consumer.js",
+    "kafkaAdmin": "node ./dist/init.js"
   },
   "keywords": [],
   "author": "",
